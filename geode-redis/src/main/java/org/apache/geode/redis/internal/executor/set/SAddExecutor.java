@@ -14,10 +14,9 @@
  */
 package org.apache.geode.redis.internal.executor.set;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Map;
 
 import org.apache.geode.cache.Region;
 import org.apache.geode.redis.internal.ByteArrayWrapper;
@@ -29,11 +28,9 @@ import org.apache.geode.redis.internal.RedisDataType;
 
 public class SAddExecutor extends SetExecutor {
 
-
   @Override
   public void executeCommand(Command command, ExecutionHandlerContext context) {
     List<byte[]> commandElems = command.getProcessedCommand();
-    AtomicLong entriesAdded = new AtomicLong(0L);
 
     if (commandElems.size() < 3) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), ArityDef.SADD));
@@ -41,33 +38,21 @@ public class SAddExecutor extends SetExecutor {
     }
 
     ByteArrayWrapper key = command.getKey();
-    Region<ByteArrayWrapper, Set<ByteArrayWrapper>> region = getRegion(context);
+    @SuppressWarnings("unchecked")
+    Region<ByteArrayWrapper, Boolean> keyRegion = (Region<ByteArrayWrapper, Boolean>) context
+        .getRegionProvider().getOrCreateRegion(key, RedisDataType.REDIS_SET, context);
 
-    // Save key
-    context.getKeyRegistrar().register(command.getKey(), RedisDataType.REDIS_SET);
+    if (commandElems.size() >= 4) {
+      Map<ByteArrayWrapper, Boolean> entries = new HashMap<ByteArrayWrapper, Boolean>();
+      for (int i = 2; i < commandElems.size(); i++)
+        entries.put(new ByteArrayWrapper(commandElems.get(i)), true);
 
-    region.compute(
-        key,
-        (ByteArrayWrapper localKey, Set<ByteArrayWrapper> oldSetValue) -> {
-          entriesAdded.set(0L);
-          Set<ByteArrayWrapper> setCopy;
-          if (oldSetValue == null) {
-            setCopy = new HashSet<>();
-          } else {
-            setCopy = new HashSet<>(oldSetValue);
-          }
-
-          for (int i = 2; i < commandElems.size(); i++) {
-            if (setCopy.add(new ByteArrayWrapper(commandElems.get(i)))) {
-              entriesAdded.incrementAndGet();
-            }
-          }
-
-          return setCopy;
-        });
-
-    command
-        .setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), entriesAdded.get()));
-
+      keyRegion.putAll(entries);
+      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), entries.size()));
+    } else {
+      Object v = keyRegion.put(new ByteArrayWrapper(commandElems.get(2)), true);
+      command
+          .setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), v == null ? 1 : 0));
+    }
   }
 }

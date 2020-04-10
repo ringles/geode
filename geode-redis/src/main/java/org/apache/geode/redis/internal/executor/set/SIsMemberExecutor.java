@@ -15,7 +15,6 @@
 package org.apache.geode.redis.internal.executor.set;
 
 import java.util.List;
-import java.util.Set;
 
 import org.apache.geode.cache.Region;
 import org.apache.geode.redis.internal.ByteArrayWrapper;
@@ -42,28 +41,21 @@ public class SIsMemberExecutor extends SetExecutor {
     }
 
     ByteArrayWrapper key = command.getKey();
-    if (!context.getKeyRegistrar().isRegistered(key)) {
-      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_EXISTS));
-      return;
-    }
-
     ByteArrayWrapper member = new ByteArrayWrapper(commandElems.get(2));
 
-    Region<ByteArrayWrapper, Set<ByteArrayWrapper>> region = this.getRegion(context);
+    checkDataType(key, RedisDataType.REDIS_SET, context);
+    @SuppressWarnings("unchecked")
+    Region<ByteArrayWrapper, Boolean> keyRegion =
+        (Region<ByteArrayWrapper, Boolean>) context.getRegionProvider().getRegion(key);
 
-    Set<ByteArrayWrapper> set = region.get(key);
-
-    if (set == null) {
+    if (keyRegion == null) {
       command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_EXISTS));
       return;
     }
 
-    if (set.contains(member)) {
+    if (keyRegion.containsKey(member))
       command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), EXISTS));
-      // save key for next quick lookup
-      context.getKeyRegistrar().register(key, RedisDataType.REDIS_SET);
-    } else {
+    else
       command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_EXISTS));
-    }
   }
 }
