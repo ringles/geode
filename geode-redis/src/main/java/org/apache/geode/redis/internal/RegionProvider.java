@@ -214,8 +214,7 @@ public class RegionProvider implements Closeable {
           return destroyRegion(key, type);
         } else if (type == RedisDataType.REDIS_SET) {
           // remove the set
-          setRegion.remove(key);
-          return true;
+          return destroyRegion(key, type);
         } else if (type == RedisDataType.REDIS_HASH) {
           // Check hash
           hashRegion.remove(key);

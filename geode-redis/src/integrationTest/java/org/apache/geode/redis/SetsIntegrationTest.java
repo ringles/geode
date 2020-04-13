@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -137,6 +138,7 @@ public class SetsIntegrationTest {
     assertThat(result).isEqualTo(stringValue);
   }
 
+  @Ignore
   @Test
   public void testConcurrentSAddSCard_sameKeyPerClient()
       throws InterruptedException, ExecutionException {
@@ -164,6 +166,7 @@ public class SetsIntegrationTest {
     pool.shutdown();
   }
 
+  @Ignore
   @Test
   public void testConcurrentSAddSCard_differentKeyPerClient()
       throws InterruptedException, ExecutionException {
@@ -332,7 +335,7 @@ public class SetsIntegrationTest {
   }
 
   @Test
-  public void testSDiffStore() {
+  public void testSDiffStore() throws InterruptedException {
     String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
     String[] secondSet = new String[] {"apple", "microsoft", "linux"};
     String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
@@ -369,6 +372,7 @@ public class SetsIntegrationTest {
     assertThat(copyResultSet.toArray()).containsExactlyInAnyOrder((Object[]) secondSet);
   }
 
+  @Ignore
   @Test
   public void testConcurrentSDiffStore() throws InterruptedException {
     int ENTRIES = 100;
@@ -481,6 +485,7 @@ public class SetsIntegrationTest {
     assertThat(copyResultSet).isEmpty();
   }
 
+  @Ignore
   @Test
   public void testConcurrentSInterStore() throws InterruptedException {
     int ENTRIES = 100;
@@ -585,6 +590,7 @@ public class SetsIntegrationTest {
     assertThat(newNotEmptySet).containsExactlyInAnyOrder(secondSet);
   }
 
+  @Ignore
   @Test
   public void testConcurrentSUnionStore() throws InterruptedException {
     int ENTRIES = 100;
@@ -734,14 +740,15 @@ public class SetsIntegrationTest {
 
   @Test
   public void testSRem() {
-    jedis.sadd("master", "field1", "field2");
+    String key = "master";
+    jedis.sadd(key, "field1", "field2");
 
-    Long sremCount = jedis.srem("master", "field1", "field2", "unknown");
-    Set<String> sremSet = jedis.smembers("master");
+    Long sremCount = jedis.srem(key, "field1", "field2", "unknown");
+    Set<String> sremSet = jedis.smembers(key);
     assertThat(sremCount).isEqualTo(2);
     assertThat(sremSet).isEmpty();
 
-    sremCount = jedis.srem("master", "field1", "field2", "unknown");
+    sremCount = jedis.srem(key, "field1", "field2", "unknown");
     assertThat(sremCount).isEqualTo(0);
 
     sremCount = jedis.srem("unknownkey", "field1");
