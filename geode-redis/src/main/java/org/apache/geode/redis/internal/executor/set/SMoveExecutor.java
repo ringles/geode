@@ -17,6 +17,8 @@ package org.apache.geode.redis.internal.executor.set;
 import java.util.List;
 
 import org.apache.geode.cache.Region;
+import org.apache.geode.cache.TimeoutException;
+import org.apache.geode.redis.internal.AutoCloseableLock;
 import org.apache.geode.redis.internal.ByteArrayWrapper;
 import org.apache.geode.redis.internal.Coder;
 import org.apache.geode.redis.internal.Command;
@@ -45,29 +47,39 @@ public class SMoveExecutor extends SetExecutor {
 
     checkDataType(source, RedisDataType.REDIS_SET, context);
     checkDataType(destination, RedisDataType.REDIS_SET, context);
-    @SuppressWarnings("unchecked")
-    Region<ByteArrayWrapper, Boolean> sourceRegion =
-        (Region<ByteArrayWrapper, Boolean>) context.getRegionProvider().getRegion(source);
+    try (AutoCloseableLock regionLock = withRegionLock(context, source)) {
+      @SuppressWarnings("unchecked")
+      Region<ByteArrayWrapper, Boolean> sourceRegion =
+          (Region<ByteArrayWrapper, Boolean>) context.getRegionProvider().getRegion(source);
 
-    if (sourceRegion == null) {
-      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_MOVED));
+      if (sourceRegion == null) {
+        command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_MOVED));
+        return;
+      }
+
+      Object oldVal = sourceRegion.get(mem);
+      sourceRegion.remove(mem);
+
+      if (oldVal == null) {
+        command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_MOVED));
+        return;
+      }
+
+      @SuppressWarnings("unchecked")
+      Region<ByteArrayWrapper, Boolean> destinationRegion =
+          (Region<ByteArrayWrapper, Boolean>) getOrCreateRegion(context, destination,
+              RedisDataType.REDIS_SET);
+      destinationRegion.put(mem, true);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      command.setResponse(
+          Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
+      return;
+    } catch (TimeoutException e) {
+      command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
+          "Timeout acquiring lock. Please try again."));
       return;
     }
-
-    Object oldVal = sourceRegion.get(mem);
-    sourceRegion.remove(mem);
-
-    if (oldVal == null) {
-      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_MOVED));
-      return;
-    }
-
-    @SuppressWarnings("unchecked")
-    Region<ByteArrayWrapper, Boolean> destinationRegion =
-        (Region<ByteArrayWrapper, Boolean>) getOrCreateRegion(context, destination,
-            RedisDataType.REDIS_SET);
-    destinationRegion.put(mem, true);
-
     command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), MOVED));
   }
 }

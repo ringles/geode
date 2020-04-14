@@ -15,8 +15,10 @@
 package org.apache.geode.redis.internal.executor.set;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.geode.cache.Region;
 import org.apache.geode.redis.internal.ByteArrayWrapper;
@@ -31,6 +33,7 @@ public class SAddExecutor extends SetExecutor {
   @Override
   public void executeCommand(Command command, ExecutionHandlerContext context) {
     List<byte[]> commandElems = command.getProcessedCommand();
+    int entriesAdded = 0;
 
     if (commandElems.size() < 3) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), ArityDef.SADD));
@@ -39,20 +42,20 @@ public class SAddExecutor extends SetExecutor {
 
     ByteArrayWrapper key = command.getKey();
     @SuppressWarnings("unchecked")
-    Region<ByteArrayWrapper, Boolean> keyRegion = (Region<ByteArrayWrapper, Boolean>) context
+    Region<ByteArrayWrapper, Boolean> region = (Region<ByteArrayWrapper, Boolean>) context
         .getRegionProvider().getOrCreateRegion(key, RedisDataType.REDIS_SET, context);
 
-    if (commandElems.size() >= 4) {
-      Map<ByteArrayWrapper, Boolean> entries = new HashMap<ByteArrayWrapper, Boolean>();
-      for (int i = 2; i < commandElems.size(); i++)
-        entries.put(new ByteArrayWrapper(commandElems.get(i)), true);
-
-      keyRegion.putAll(entries);
-      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), entries.size()));
-    } else {
-      Object v = keyRegion.put(new ByteArrayWrapper(commandElems.get(2)), true);
-      command
-          .setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), v == null ? 1 : 0));
+    for (int i = 2; i < commandElems.size(); i++) {
+      ByteArrayWrapper entry = new ByteArrayWrapper(commandElems.get(i));
+      if (null == region.putIfAbsent(entry, Boolean.TRUE)) {
+        entriesAdded++;
+      }
     }
+
+    command
+        .setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), entriesAdded));
+
+    // Save key
+    context.getKeyRegistrar().register(command.getKey(), RedisDataType.REDIS_SET);
   }
 }

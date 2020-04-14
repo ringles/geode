@@ -83,8 +83,10 @@ public class SetsIntegrationTest {
   @After
   public void cleanup() {
     jedis.flushAll();
+    jedis2.flushAll();
   }
 
+  //@Ignore
   @Test
   public void testSAddSCard() {
     int elements = 10;
@@ -105,6 +107,7 @@ public class SetsIntegrationTest {
   @Rule
   public ExpectedException exceptionRule = ExpectedException.none();
 
+  //@Ignore
   @Test
   public void testSAdd_withExistingKey_ofWrongType_shouldReturnError() {
     String key = "key";
@@ -119,6 +122,7 @@ public class SetsIntegrationTest {
     jedis.sadd(key, setValue);
   }
 
+  //@Ignore
   @Test
   public void testSAdd_withExistingKey_ofWrongType_shouldNotOverWriteExistingKey() {
     String key = "key";
@@ -138,7 +142,7 @@ public class SetsIntegrationTest {
     assertThat(result).isEqualTo(stringValue);
   }
 
-  @Ignore
+  //@Ignore
   @Test
   public void testConcurrentSAddSCard_sameKeyPerClient()
       throws InterruptedException, ExecutionException {
@@ -166,7 +170,7 @@ public class SetsIntegrationTest {
     pool.shutdown();
   }
 
-  @Ignore
+  //@Ignore
   @Test
   public void testConcurrentSAddSCard_differentKeyPerClient()
       throws InterruptedException, ExecutionException {
@@ -201,7 +205,7 @@ public class SetsIntegrationTest {
   }
 
   private int doABunchOfSAdds(String key, String[] strings,
-      Jedis jedis) {
+                              Jedis jedis) {
     int successes = 0;
 
     for (int i = 0; i < strings.length; i++) {
@@ -214,6 +218,7 @@ public class SetsIntegrationTest {
     return successes;
   }
 
+  //@Ignore
   @Test
   public void testSMembersSIsMember() {
     int elements = 10;
@@ -240,6 +245,7 @@ public class SetsIntegrationTest {
     assertThat(jedis.sismember(key, "nonExistentMember")).isFalse();
   }
 
+  //@Ignore
   @Test
   public void testSMove() {
     String source = generator.generate('x');
@@ -266,6 +272,7 @@ public class SetsIntegrationTest {
     assertThat(jedis.smove(test, dest, generator.generate('x'))).isEqualTo(0);
   }
 
+  //@Ignore
   @Test
   public void testSMoveNegativeCases() {
     String source = "source";
@@ -280,6 +287,7 @@ public class SetsIntegrationTest {
     assertThat(jedis.smove("nonExistentSource", dest, nonexistentField)).isEqualTo(0);
   }
 
+  //@Ignore
   @Test
   public void testConcurrentSMove() throws ExecutionException, InterruptedException {
     String source = generator.generate('x');
@@ -302,7 +310,7 @@ public class SetsIntegrationTest {
   }
 
   private long moveSetElements(String source, String dest, Set<String> strings,
-      Jedis jedis) {
+                               Jedis jedis) {
     long results = 0;
     for (String entry : strings) {
       results += jedis.smove(source, dest, entry);
@@ -311,17 +319,18 @@ public class SetsIntegrationTest {
     return results;
   }
 
+  //@Ignore
   @Test
   public void testSDiff() {
-    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
-    String[] secondSet = new String[] {"apple", "microsoft", "linux"};
-    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
+    String[] firstSet = new String[]{"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[]{"apple", "microsoft", "linux"};
+    String[] thirdSet = new String[]{"luigi", "bowser", "peach", "mario"};
     jedis.sadd("set1", firstSet);
     jedis.sadd("set2", secondSet);
     jedis.sadd("set3", thirdSet);
 
     Set<String> result = jedis.sdiff("set1", "set2", "set3", "doesNotExist");
-    String[] expected = new String[] {"pear", "plum", "orange"};
+    String[] expected = new String[]{"pear", "plum", "orange"};
     assertThat(result).containsExactlyInAnyOrder(expected);
 
     Set<String> shouldNotChange = jedis.smembers("set1");
@@ -334,11 +343,12 @@ public class SetsIntegrationTest {
     assertThat(copySet).containsExactlyInAnyOrder(firstSet);
   }
 
+  //@Ignore
   @Test
   public void testSDiffStore() throws InterruptedException {
-    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
-    String[] secondSet = new String[] {"apple", "microsoft", "linux"};
-    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
+    String[] firstSet = new String[]{"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[]{"apple", "microsoft", "linux"};
+    String[] thirdSet = new String[]{"luigi", "bowser", "peach", "mario"};
     jedis.sadd("set1", firstSet);
     jedis.sadd("set2", secondSet);
     jedis.sadd("set3", thirdSet);
@@ -346,13 +356,13 @@ public class SetsIntegrationTest {
     Long resultSize = jedis.sdiffstore("result", "set1", "set2", "set3");
     Set<String> resultSet = jedis.smembers("result");
 
-    String[] expected = new String[] {"pear", "plum", "orange"};
+    String[] expected = new String[]{"pear", "plum", "orange"};
     assertThat(resultSize).isEqualTo(expected.length);
     assertThat(resultSet).containsExactlyInAnyOrder(expected);
 
     Long otherResultSize = jedis.sdiffstore("set1", "set1", "result");
     Set<String> otherResultSet = jedis.smembers("set1");
-    String[] otherExpected = new String[] {"apple", "peach"};
+    String[] otherExpected = new String[]{"apple", "peach"};
     assertThat(otherResultSize).isEqualTo(otherExpected.length);
     assertThat(otherResultSet).containsExactlyInAnyOrder(otherExpected);
 
@@ -372,7 +382,7 @@ public class SetsIntegrationTest {
     assertThat(copyResultSet.toArray()).containsExactlyInAnyOrder((Object[]) secondSet);
   }
 
-  @Ignore
+  //@Ignore
   @Test
   public void testConcurrentSDiffStore() throws InterruptedException {
     int ENTRIES = 100;
@@ -392,11 +402,11 @@ public class SetsIntegrationTest {
       otherSets.add(oneSet);
     }
 
-    jedis.sadd("master", masterSet.toArray(new String[] {}));
+    jedis.sadd("master", masterSet.toArray(new String[]{}));
 
     for (int i = 0; i < ENTRIES; i++) {
-      jedis.sadd("set-" + i, otherSets.get(i).toArray(new String[] {}));
-      jedis.sadd("master", otherSets.get(i).toArray(new String[] {}));
+      jedis.sadd("set-" + i, otherSets.get(i).toArray(new String[]{}));
+      jedis.sadd("master", otherSets.get(i).toArray(new String[]{}));
     }
 
     Runnable runnable1 = () -> {
@@ -424,18 +434,19 @@ public class SetsIntegrationTest {
     assertThat(jedis.smembers("master").toArray()).containsExactlyInAnyOrder(masterSet.toArray());
   }
 
+  //@Ignore
   @Test
   public void testSInter() {
-    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
-    String[] secondSet = new String[] {"apple", "microsoft", "linux", "peach"};
-    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
+    String[] firstSet = new String[]{"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[]{"apple", "microsoft", "linux", "peach"};
+    String[] thirdSet = new String[]{"luigi", "bowser", "peach", "mario"};
     jedis.sadd("set1", firstSet);
     jedis.sadd("set2", secondSet);
     jedis.sadd("set3", thirdSet);
 
     Set<String> resultSet = jedis.sinter("set1", "set2", "set3");
 
-    String[] expected = new String[] {"peach"};
+    String[] expected = new String[]{"peach"};
     assertThat(resultSet).containsExactlyInAnyOrder(expected);
 
     Set<String> emptyResultSet = jedis.sinter("nonexistent", "set2", "set3");
@@ -447,11 +458,12 @@ public class SetsIntegrationTest {
     assertThat(otherEmptyResultSet).isEmpty();
   }
 
+  //@Ignore
   @Test
   public void testSInterStore() {
-    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
-    String[] secondSet = new String[] {"apple", "microsoft", "linux", "peach"};
-    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
+    String[] firstSet = new String[]{"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[]{"apple", "microsoft", "linux", "peach"};
+    String[] thirdSet = new String[]{"luigi", "bowser", "peach", "mario"};
     jedis.sadd("set1", firstSet);
     jedis.sadd("set2", secondSet);
     jedis.sadd("set3", thirdSet);
@@ -459,13 +471,13 @@ public class SetsIntegrationTest {
     Long resultSize = jedis.sinterstore("result", "set1", "set2", "set3");
     Set<String> resultSet = jedis.smembers("result");
 
-    String[] expected = new String[] {"peach"};
+    String[] expected = new String[]{"peach"};
     assertThat(resultSize).isEqualTo(expected.length);
     assertThat(resultSet).containsExactlyInAnyOrder(expected);
 
     Long otherResultSize = jedis.sinterstore("set1", "set1", "set2");
     Set<String> otherResultSet = jedis.smembers("set1");
-    String[] otherExpected = new String[] {"apple", "peach"};
+    String[] otherExpected = new String[]{"apple", "peach"};
     assertThat(otherResultSize).isEqualTo(otherExpected.length);
     assertThat(otherResultSet).containsExactlyInAnyOrder(otherExpected);
 
@@ -485,7 +497,6 @@ public class SetsIntegrationTest {
     assertThat(copyResultSet).isEmpty();
   }
 
-  @Ignore
   @Test
   public void testConcurrentSInterStore() throws InterruptedException {
     int ENTRIES = 100;
@@ -505,11 +516,11 @@ public class SetsIntegrationTest {
       otherSets.add(oneSet);
     }
 
-    jedis.sadd("master", masterSet.toArray(new String[] {}));
+    jedis.sadd("master", masterSet.toArray(new String[]{}));
 
     for (int i = 0; i < ENTRIES; i++) {
-      jedis.sadd("set-" + i, otherSets.get(i).toArray(new String[] {}));
-      jedis.sadd("set-" + i, masterSet.toArray(new String[] {}));
+      jedis.sadd("set-" + i, otherSets.get(i).toArray(new String[]{}));
+      jedis.sadd("set-" + i, masterSet.toArray(new String[]{}));
     }
 
     Runnable runnable1 = () -> {
@@ -537,18 +548,19 @@ public class SetsIntegrationTest {
     assertThat(jedis.smembers("master").toArray()).containsExactlyInAnyOrder(masterSet.toArray());
   }
 
+  //@Ignore
   @Test
   public void testSUnion() {
-    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
-    String[] secondSet = new String[] {"apple", "microsoft", "linux", "peach"};
-    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
+    String[] firstSet = new String[]{"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[]{"apple", "microsoft", "linux", "peach"};
+    String[] thirdSet = new String[]{"luigi", "bowser", "peach", "mario"};
     jedis.sadd("set1", firstSet);
     jedis.sadd("set2", secondSet);
     jedis.sadd("set3", thirdSet);
 
     Set<String> resultSet = jedis.sunion("set1", "set2");
     String[] expected =
-        new String[] {"pear", "apple", "plum", "orange", "peach", "microsoft", "linux"};
+        new String[]{"pear", "apple", "plum", "orange", "peach", "microsoft", "linux"};
     assertThat(resultSet).containsExactlyInAnyOrder(expected);
 
     Set<String> otherResultSet = jedis.sunion("nonexistent", "set1");
@@ -560,11 +572,12 @@ public class SetsIntegrationTest {
     assertThat(yetAnotherResultSet).containsExactlyInAnyOrder(secondSet);
   }
 
+  //@Ignore
   @Test
   public void testSUnionStore() {
-    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
-    String[] secondSet = new String[] {"apple", "microsoft", "linux", "peach"};
-    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
+    String[] firstSet = new String[]{"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[]{"apple", "microsoft", "linux", "peach"};
+    String[] thirdSet = new String[]{"luigi", "bowser", "peach", "mario"};
     jedis.sadd("set1", firstSet);
     jedis.sadd("set2", secondSet);
     jedis.sadd("set3", thirdSet);
@@ -574,7 +587,7 @@ public class SetsIntegrationTest {
 
     Set<String> resultSet = jedis.smembers("result");
     String[] expected =
-        new String[] {"pear", "apple", "plum", "orange", "peach", "microsoft", "linux"};
+        new String[]{"pear", "apple", "plum", "orange", "peach", "microsoft", "linux"};
     assertThat(resultSet).containsExactlyInAnyOrder(expected);
 
     Long notEmptyResultSize = jedis.sunionstore("notempty", "nonexistent", "set1");
@@ -590,8 +603,9 @@ public class SetsIntegrationTest {
     assertThat(newNotEmptySet).containsExactlyInAnyOrder(secondSet);
   }
 
-  @Ignore
+  //@Ignore
   @Test
+  // TODO: Flakey!
   public void testConcurrentSUnionStore() throws InterruptedException {
     int ENTRIES = 100;
     int SUBSET_SIZE = 100;
@@ -610,10 +624,10 @@ public class SetsIntegrationTest {
       otherSets.add(oneSet);
     }
 
-    jedis.sadd("master", masterSet.toArray(new String[] {}));
+    jedis.sadd("master", masterSet.toArray(new String[]{}));
 
     for (int i = 0; i < ENTRIES; i++) {
-      jedis.sadd("set-" + i, otherSets.get(i).toArray(new String[] {}));
+      jedis.sadd("set-" + i, otherSets.get(i).toArray(new String[]{}));
     }
 
     Runnable runnable1 = () -> {
@@ -643,16 +657,19 @@ public class SetsIntegrationTest {
     assertThat(jedis.smembers("master").toArray()).containsExactlyInAnyOrder(masterSet.toArray());
   }
 
+  //@Ignore
   @Test
   public void testSPop() {
     int ENTRIES = 10;
+    jedis.flushAll();
 
+    assertThat(jedis.scard("master")).isEqualTo(0);
     List<String> masterSet = new ArrayList<>();
     for (int i = 0; i < ENTRIES; i++) {
       masterSet.add("master-" + i);
     }
 
-    jedis.sadd("master", masterSet.toArray(new String[] {}));
+    jedis.sadd("master", masterSet.toArray(new String[]{}));
     String poppy = jedis.spop("master");
 
     masterSet.remove(poppy);
@@ -661,6 +678,7 @@ public class SetsIntegrationTest {
     assertThat(jedis.spop("spopnonexistent")).isNull();
   }
 
+  //@Ignore
   @Test
   public void testSPopWithCount() {
     int ENTRIES = 10;
@@ -670,13 +688,14 @@ public class SetsIntegrationTest {
       masterSet.add("master-" + i);
     }
 
-    jedis.sadd("master", masterSet.toArray(new String[] {}));
+    jedis.sadd("master", masterSet.toArray(new String[]{}));
     Set<String> popped = jedis.spop("master", ENTRIES);
 
     assertThat(jedis.smembers("master").toArray()).isEmpty();
     assertThat(popped.toArray()).containsExactlyInAnyOrder(masterSet.toArray());
   }
 
+  //@Ignore
   @Test
   public void testManySPops() {
     int ENTRIES = 100;
@@ -686,7 +705,7 @@ public class SetsIntegrationTest {
       masterSet.add("master-" + i);
     }
 
-    jedis.sadd("master", masterSet.toArray(new String[] {}));
+    jedis.sadd("master", masterSet.toArray(new String[]{}));
 
     List<String> popped = new ArrayList<>();
     for (int i = 0; i < ENTRIES; i++) {
@@ -699,6 +718,7 @@ public class SetsIntegrationTest {
     assertThat(jedis.spop("master")).isNull();
   }
 
+  //@Ignore
   @Test
   public void testConcurrentSPops() throws InterruptedException {
     int ENTRIES = 1000;
@@ -708,7 +728,7 @@ public class SetsIntegrationTest {
       masterSet.add("master-" + i);
     }
 
-    jedis.sadd("master", masterSet.toArray(new String[] {}));
+    jedis.sadd("master", masterSet.toArray(new String[]{}));
 
     List<String> popped1 = new ArrayList<>();
     Runnable runnable1 = () -> {
@@ -738,6 +758,7 @@ public class SetsIntegrationTest {
     assertThat(popped1.toArray()).containsExactlyInAnyOrder(masterSet.toArray());
   }
 
+  //@Ignore
   @Test
   public void testSRem() {
     String key = "master";
@@ -755,6 +776,7 @@ public class SetsIntegrationTest {
     assertThat(sremCount).isEqualTo(0);
   }
 
+  //@Ignore
   @Test
   public void testConcurrentSRems() throws InterruptedException {
     int ENTRIES = 1000;
@@ -764,7 +786,7 @@ public class SetsIntegrationTest {
       masterSet.add("master-" + i);
     }
 
-    jedis.sadd("master", masterSet.toArray(new String[] {}));
+    jedis.sadd("master", masterSet.toArray(new String[]{}));
 
     AtomicLong sremmed1 = new AtomicLong(0);
     Runnable runnable1 = () -> {

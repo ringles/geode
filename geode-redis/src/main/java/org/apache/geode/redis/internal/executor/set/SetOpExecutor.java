@@ -41,16 +41,18 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), getArgsError()));
       return;
     }
-    RegionProvider rC = context.getRegionProvider();
+    RegionProvider regionProvider = context.getRegionProvider();
     ByteArrayWrapper destination = null;
     if (isStorage())
       destination = command.getKey();
 
     ByteArrayWrapper firstSetKey = new ByteArrayWrapper(commandElems.get(setsStartIndex++));
-    if (!isStorage())
+    if (!isStorage()) {
       checkDataType(firstSetKey, RedisDataType.REDIS_SET, context);
+    }
     Region<ByteArrayWrapper, Boolean> region =
-        (Region<ByteArrayWrapper, Boolean>) rC.getRegion(firstSetKey);
+        (Region<ByteArrayWrapper, Boolean>) regionProvider.getRegion(firstSetKey);
+
     Set<ByteArrayWrapper> firstSet = null;
     if (region != null) {
       firstSet = new HashSet<ByteArrayWrapper>(region.keySet());
@@ -59,13 +61,16 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
     for (int i = setsStartIndex; i < commandElems.size(); i++) {
       ByteArrayWrapper key = new ByteArrayWrapper(commandElems.get(i));
       checkDataType(key, RedisDataType.REDIS_SET, context);
-      region = (Region<ByteArrayWrapper, Boolean>) rC.getRegion(key);
-      if (region != null)
+      region = (Region<ByteArrayWrapper, Boolean>) regionProvider.getRegion(key);
+      if (region != null) {
         setList.add(region.keySet());
-      else if (this instanceof SInterExecutor)
-        setList.add(null);
+      } else {
+        if (this instanceof SInterExecutor) {
+          setList.add(null);
+        }
+      }
     }
-    if (setList.isEmpty()) {
+    if (setList.isEmpty() && firstSet == null) {
       if (isStorage()) {
         command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), 0));
         context.getRegionProvider().removeKey(destination);
@@ -78,14 +83,14 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
     Set<ByteArrayWrapper> resultSet = setOp(firstSet, setList);
     if (isStorage()) {
       Region<ByteArrayWrapper, Boolean> newRegion = null; // (Region<ByteArrayWrapper, Boolean>)
-                                                          // rC.getRegion(destination);
-      rC.removeKey(destination);
+                                                          // regionProvider.getRegion(destination);
+      regionProvider.removeKey(destination);
       if (resultSet != null) {
         Map<ByteArrayWrapper, Boolean> map = new HashMap<ByteArrayWrapper, Boolean>();
         for (ByteArrayWrapper entry : resultSet)
           map.put(entry, Boolean.TRUE);
         if (!map.isEmpty()) {
-          newRegion = (Region<ByteArrayWrapper, Boolean>) rC.getOrCreateRegion(destination,
+          newRegion = (Region<ByteArrayWrapper, Boolean>) regionProvider.getOrCreateRegion(destination,
               RedisDataType.REDIS_SET, context);
           newRegion.putAll(map);
         }
