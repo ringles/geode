@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.geode.cache.Region;
+import org.apache.geode.cache.TimeoutException;
+import org.apache.geode.redis.internal.AutoCloseableLock;
 import org.apache.geode.redis.internal.ByteArrayWrapper;
 import org.apache.geode.redis.internal.Coder;
 import org.apache.geode.redis.internal.Command;
@@ -43,9 +45,33 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
     }
     RegionProvider regionProvider = context.getRegionProvider();
     ByteArrayWrapper destination = null;
-    if (isStorage())
+    if (isStorage()) {
       destination = command.getKey();
+    }
 
+    if (destination != null) {
+      try (AutoCloseableLock regionLock = withRegionLock(context, destination)) {
+        doActualSetOperation(command, context, commandElems, setsStartIndex, regionProvider,
+            destination);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        command.setResponse(
+            Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
+        return;
+      } catch (TimeoutException e) {
+        command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
+            "Timeout acquiring lock. Please try again."));
+        return;
+      }
+    } else {
+      doActualSetOperation(command, context, commandElems, setsStartIndex, regionProvider,
+          destination);
+    }
+  }
+
+  private void doActualSetOperation(Command command, ExecutionHandlerContext context,
+                                    List<byte[]> commandElems, int setsStartIndex,
+                                    RegionProvider regionProvider, ByteArrayWrapper destination) {
     ByteArrayWrapper firstSetKey = new ByteArrayWrapper(commandElems.get(setsStartIndex++));
     if (!isStorage()) {
       checkDataType(firstSetKey, RedisDataType.REDIS_SET, context);
@@ -93,6 +119,7 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
           newRegion = (Region<ByteArrayWrapper, Boolean>) regionProvider.getOrCreateRegion(destination,
               RedisDataType.REDIS_SET, context);
           newRegion.putAll(map);
+          context.getKeyRegistrar().register(destination, RedisDataType.REDIS_SET);
         }
         command
             .setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), resultSet.size()));
