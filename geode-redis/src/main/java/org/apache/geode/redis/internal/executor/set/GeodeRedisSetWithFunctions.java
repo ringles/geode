@@ -19,6 +19,7 @@ import static org.apache.geode.redis.internal.RedisCommandType.DEL;
 import static org.apache.geode.redis.internal.RedisCommandType.SADD;
 import static org.apache.geode.redis.internal.RedisCommandType.SMEMBERS;
 import static org.apache.geode.redis.internal.RedisCommandType.SREM;
+import static org.apache.geode.redis.internal.RedisCommandType.EXISTS;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -78,6 +79,12 @@ public class GeodeRedisSetWithFunctions implements RedisSet {
   @Override
   public boolean del() {
     ResultCollector<Object[], List<Boolean>> results = executeFunction(DEL, null);
+    return results.getResult().get(0);
+  }
+
+  @Override
+  public long exists(ArrayList<ByteArrayWrapper> membersToAdd) {
+    ResultCollector<Object[], List<Long>> results = executeFunction(EXISTS, membersToAdd);
     return results.getResult().get(0);
   }
 

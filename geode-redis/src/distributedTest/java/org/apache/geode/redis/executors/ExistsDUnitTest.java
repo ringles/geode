@@ -12,23 +12,39 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.apache.geode.redis.executors;
+package org.apache.geode.redis;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.Serializable;
+import java.net.HttpCookie;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.client.RestTemplate;
 import redis.clients.jedis.Jedis;
 
 import org.apache.geode.internal.AvailablePortHelper;
+import org.apache.geode.redis.springRedisTestApplication.RedisSpringTestApplication;
 import org.apache.geode.test.awaitility.GeodeAwaitility;
+import org.apache.geode.test.dunit.VM;
 import org.apache.geode.test.dunit.rules.ClusterStartupRule;
-import org.apache.geode.test.dunit.rules.MemberVM;
+import org.apache.geode.test.dunit.rules.DistributedRestoreSystemProperties;
 import org.apache.geode.test.junit.categories.RedisTest;
 
 @Category({RedisTest.class})
@@ -37,40 +53,88 @@ public class ExistsDUnitTest implements Serializable {
   @ClassRule
   public static ClusterStartupRule cluster = new ClusterStartupRule(3);
 
-  private static String LOCALHOST = "localhost";
+  @Rule
+  public DistributedRestoreSystemProperties restoreSystemProperties =
+      new DistributedRestoreSystemProperties();
 
-  private static int server1Port;
-  private static int server2Port;
+  public static ConfigurableApplicationContext springApplicationContext;
 
+  private static final int LOCATOR = 0;
+  private static final int SERVER1 = 1;
+  private static final int SERVER2 = 2;
+  private static final Map<Integer, Integer> ports = new HashMap<>();
+
+  private static Jedis jedis;
+  private static Jedis jedis2;
   private static final int JEDIS_TIMEOUT = Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
 
   @BeforeClass
   public static void setup() {
-    final int[] ports = AvailablePortHelper.getRandomAvailableTCPPorts(2);
-    server1Port = ports[0];
-    server2Port = ports[1];
+    int[] availablePorts = AvailablePortHelper.getRandomAvailableTCPPorts(2);
+    ports.put(SERVER1, availablePorts[0]);
+    ports.put(SERVER2, availablePorts[1]);
 
-    MemberVM locator = cluster.startLocatorVM(0);
+    cluster.startLocatorVM(LOCATOR);
+    startRedisServer(SERVER1);
+    startRedisServer(SERVER2);
 
-    Properties redisProps = new Properties();
-    redisProps.setProperty("redis-bind-address", LOCALHOST);
-    redisProps.setProperty("redis-port", Integer.toString(ports[0]));
-    redisProps.setProperty("log-level", "warn");
-    cluster.startServerVM(1, redisProps, locator.getPort());
+    jedis = new Jedis("localhost", ports.get(SERVER1), JEDIS_TIMEOUT);
+    jedis2 = new Jedis("localhost", ports.get(SERVER2), JEDIS_TIMEOUT);
+  }
 
-    redisProps.setProperty("redis-port", Integer.toString(ports[1]));
-    cluster.startServerVM(2, redisProps, locator.getPort());
+  @After
+  public void cleanupAfterTest() {
+    jedis.flushAll();
+  }
+
+  @AfterClass
+  public static void cleanupAfterClass() {
+    jedis.disconnect();
   }
 
   @Test
   public void testDistributedExistsOperations() {
-    Jedis jedis = new Jedis(LOCALHOST, server1Port, JEDIS_TIMEOUT);
-    Jedis jedis2 = new Jedis(LOCALHOST, server2Port, JEDIS_TIMEOUT);
-
     jedis.set("key", "value");
     assertThat(jedis2.exists("key")).isTrue();
 
     jedis2.del("key");
     assertThat(jedis.exists("key")).isFalse();
+  }
+
+  @Test
+  public void should_existOnServer1_whenServer2GoesDown() {
+    jedis2.set("key", "value");
+    cluster.crashVM(SERVER2);
+    try {
+      assertThat(jedis.exists("key")).isTrue();
+    } finally {
+      startRedisServer(SERVER2);
+    }
+  }
+
+  @Test
+  public void should_existOnServer2_whenServerGoesDownAndIsRestarted() {
+    jedis2.set("key2", "value2");
+    cluster.crashVM(SERVER2);
+    jedis.set("key1", "value1");
+    startRedisServer(SERVER2);
+    jedis2 = new Jedis("localhost", ports.get(SERVER2), JEDIS_TIMEOUT);
+
+    assertThat(jedis2.exists("key1")).isTrue();
+    assertThat(jedis2.exists("key2")).isTrue();
+  }
+
+
+  private static void startRedisServer(int server1) {
+    cluster.startServerVM(server1, redisProperties(server1),
+        cluster.getMember(LOCATOR).getPort());
+  }
+
+  private static Properties redisProperties(int server2) {
+    Properties redisPropsForServer = new Properties();
+    redisPropsForServer.setProperty("redis-bind-address", "localHost");
+    redisPropsForServer.setProperty("redis-port", "" + ports.get(server2));
+    redisPropsForServer.setProperty("log-level", "warn");
+    return redisPropsForServer;
   }
 }

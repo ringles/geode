@@ -29,4 +29,6 @@ public interface RedisSet {
   Set<ByteArrayWrapper> members();
 
   boolean del();
+
+  long exists(ArrayList<ByteArrayWrapper> membersToAdd);
 }
