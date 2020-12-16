@@ -81,8 +81,9 @@ public class RedisSetCommandsFunctionExecutor extends RedisDataCommandsFunctionE
   public long srem(
       ByteArrayWrapper key,
       ArrayList<ByteArrayWrapper> membersToRemove) {
-    return stripedExecute(key, () -> getRedisSet(key).srem(membersToRemove,
-        getRegion(), key));
+    return stripedExecute(key, () -> getRedisSet(key,
+        RedisStats.IncrementKeyspaceHitMissStats.INCREMENT_NOTHING).srem(membersToRemove,
+            getRegion(), key));
   }
 
   @Override
@@ -111,8 +112,9 @@ public class RedisSetCommandsFunctionExecutor extends RedisDataCommandsFunctionE
   @Override
   public Collection<ByteArrayWrapper> spop(
       ByteArrayWrapper key, int popCount) {
-    return stripedExecute(key, () -> getRedisSet(key)
-        .spop(getRegion(), key, popCount));
+    return stripedExecute(key, () -> getRedisSet(key,
+        RedisStats.IncrementKeyspaceHitMissStats.INCREMENT_NOTHING)
+            .spop(getRegion(), key, popCount));
   }
 
   @Override

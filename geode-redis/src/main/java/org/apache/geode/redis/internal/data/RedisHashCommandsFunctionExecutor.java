@@ -52,8 +52,9 @@ public class RedisHashCommandsFunctionExecutor extends RedisDataCommandsFunction
 
   @Override
   public int hdel(ByteArrayWrapper key, List<ByteArrayWrapper> fieldsToRemove) {
-    return stripedExecute(key, () -> getRedisHash(key)
-        .hdel(getRegion(), key, fieldsToRemove));
+    return stripedExecute(key,
+        () -> getRedisHash(key, RedisStats.IncrementKeyspaceHitMissStats.INCREMENT_NOTHING)
+            .hdel(getRegion(), key, fieldsToRemove));
   }
 
   @Override
@@ -99,7 +100,9 @@ public class RedisHashCommandsFunctionExecutor extends RedisDataCommandsFunction
   @Override
   public Pair<BigInteger, List<Object>> hscan(ByteArrayWrapper key, Pattern matchPattern, int count,
       BigInteger cursor) {
-    return stripedExecute(key, () -> getRedisHash(key).hscan(matchPattern, count, cursor));
+    return stripedExecute(key,
+        () -> getRedisHash(key, RedisStats.IncrementKeyspaceHitMissStats.INCREMENT_HITS_AND_MISSES)
+            .hscan(matchPattern, count, cursor));
   }
 
   @Override

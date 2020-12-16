@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.geode.annotations.VisibleForTesting;
 import org.apache.geode.cache.Region;
+import org.apache.geode.redis.internal.RedisStats;
 import org.apache.geode.redis.internal.executor.set.RedisSetCommands;
 import org.apache.geode.redis.internal.executor.set.RedisSetCommandsFunctionInvoker;
 
@@ -132,7 +133,8 @@ class NullRedisSet extends RedisSet {
     }
     for (Set<ByteArrayWrapper> set : nonDestinationSets) {
       if (set == null) {
-        set = helper.getRedisSet(destination).smembers();
+        set = helper.getRedisSet(destination,
+            RedisStats.IncrementKeyspaceHitMissStats.INCREMENT_NOTHING).smembers();
       }
       if (result == null) {
         result = set;

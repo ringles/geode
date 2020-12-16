@@ -19,6 +19,7 @@ import static org.apache.geode.redis.internal.data.RedisString.NULL_REDIS_STRING
 
 import java.util.List;
 
+import org.apache.geode.redis.internal.RedisStats;
 import org.apache.geode.redis.internal.executor.string.RedisStringCommands;
 import org.apache.geode.redis.internal.executor.string.SetOptions;
 
@@ -35,6 +36,11 @@ public class RedisStringCommandsFunctionExecutor extends RedisDataCommandsFuncti
     return helper.getRedisString(key);
   }
 
+  private RedisString getRedisString(ByteArrayWrapper key,
+      RedisStats.IncrementKeyspaceHitMissStats incType) {
+    return helper.getRedisString(key, incType);
+  }
+
   private RedisString getRedisStringIgnoringType(ByteArrayWrapper key) {
     return helper.getRedisStringIgnoringType(key);
   }
@@ -42,7 +48,8 @@ public class RedisStringCommandsFunctionExecutor extends RedisDataCommandsFuncti
   @Override
   public long append(ByteArrayWrapper key, ByteArrayWrapper valueToAppend) {
     return stripedExecute(key,
-        () -> getRedisString(key).append(valueToAppend, getRegion(), key));
+        () -> getRedisString(key, RedisStats.IncrementKeyspaceHitMissStats.INCREMENT_NOTHING)
+            .append(valueToAppend, getRegion(), key));
   }
 
   @Override

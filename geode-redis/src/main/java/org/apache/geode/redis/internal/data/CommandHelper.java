@@ -168,6 +168,18 @@ public class CommandHelper {
     return checkStringType(redisData, false);
   }
 
+  RedisString getRedisString(ByteArrayWrapper key,
+      RedisStats.IncrementKeyspaceHitMissStats incType) {
+    RedisData redisData = getRedisData(key, NULL_REDIS_STRING);
+    if (redisData == NULL_REDIS_STRING) {
+      redisStats.incKeyspaceMisses(incType);
+    } else {
+      redisStats.incKeyspaceHits(incType);
+    }
+
+    return checkStringType(redisData, false);
+  }
+
   RedisString getRedisStringIgnoringType(ByteArrayWrapper key) {
     RedisData redisData = getRedisData(key, NULL_REDIS_STRING);
     if (redisData == NULL_REDIS_STRING) {
