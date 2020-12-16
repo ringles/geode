@@ -37,6 +37,14 @@ import org.apache.geode.internal.statistics.StatisticsTypeFactoryImpl;
 
 public class RedisStats {
   @Immutable
+  public enum IncrementKeyspaceHitMissStats {
+    INCREMENT_NOTHING,
+    INCREMENT_HITS,
+    INCREMENT_MISSES,
+    INCREMENT_HITS_AND_MISSES
+  }
+
+  @Immutable
   private static final StatisticsType type;
   @Immutable
   private static final EnumMap<RedisCommandType, Integer> completedCommandStatIds =
@@ -260,12 +268,26 @@ public class RedisStats {
     keyspaceHits.incrementAndGet();
   }
 
+  public void incKeyspaceHits(IncrementKeyspaceHitMissStats incType) {
+    if (incType == IncrementKeyspaceHitMissStats.INCREMENT_HITS
+        || incType == IncrementKeyspaceHitMissStats.INCREMENT_HITS_AND_MISSES) {
+      keyspaceHits.incrementAndGet();
+    }
+  }
+
   public long getKeyspaceHits() {
     return keyspaceHits.get();
   }
 
   public void incKeyspaceMisses() {
     keyspaceMisses.incrementAndGet();
+  }
+
+  public void incKeyspaceMisses(IncrementKeyspaceHitMissStats incType) {
+    if (incType == IncrementKeyspaceHitMissStats.INCREMENT_MISSES
+        || incType == IncrementKeyspaceHitMissStats.INCREMENT_HITS_AND_MISSES) {
+      keyspaceMisses.incrementAndGet();
+    }
   }
 
   public long getKeyspaceMisses() {

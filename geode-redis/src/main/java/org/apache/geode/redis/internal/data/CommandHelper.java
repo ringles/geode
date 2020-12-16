@@ -93,6 +93,16 @@ public class CommandHelper {
     return checkSetType(redisData);
   }
 
+  RedisSet getRedisSet(ByteArrayWrapper key, RedisStats.IncrementKeyspaceHitMissStats incType) {
+    RedisData redisData = getRedisData(key, NULL_REDIS_SET);
+    if (redisData == NULL_REDIS_SET) {
+      redisStats.incKeyspaceMisses(incType);
+    } else {
+      redisStats.incKeyspaceHits(incType);
+    }
+    return checkSetType(redisData);
+  }
+
   private RedisSet checkSetType(RedisData redisData) {
     if (redisData == null) {
       return null;
@@ -111,6 +121,16 @@ public class CommandHelper {
       redisStats.incKeyspaceHits();
     }
 
+    return checkHashType(redisData);
+  }
+
+  RedisHash getRedisHash(ByteArrayWrapper key, RedisStats.IncrementKeyspaceHitMissStats incType) {
+    RedisData redisData = getRedisData(key, NULL_REDIS_HASH);
+    if (redisData == NULL_REDIS_HASH) {
+      redisStats.incKeyspaceMisses(incType);
+    } else {
+      redisStats.incKeyspaceHits(incType);
+    }
     return checkHashType(redisData);
   }
 
@@ -166,6 +186,22 @@ public class CommandHelper {
       result = new RedisString(value);
     } else {
       redisStats.incKeyspaceHits();
+      result = (RedisString) redisData;
+      result.set(value);
+    }
+    region.put(key, result);
+    return result;
+  }
+
+  RedisString setRedisString(ByteArrayWrapper key, ByteArrayWrapper value,
+      RedisStats.IncrementKeyspaceHitMissStats incType) {
+    RedisString result;
+    RedisData redisData = getRedisData(key);
+    if (redisData.isNull() || redisData.getType() != REDIS_STRING) {
+      redisStats.incKeyspaceMisses(incType);
+      result = new RedisString(value);
+    } else {
+      redisStats.incKeyspaceHits(incType);
       result = (RedisString) redisData;
       result.set(value);
     }

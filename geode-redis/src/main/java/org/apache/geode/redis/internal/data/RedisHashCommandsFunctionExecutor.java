@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import org.apache.geode.redis.internal.RedisStats;
 import org.apache.geode.redis.internal.executor.hash.RedisHashCommands;
 
 public class RedisHashCommandsFunctionExecutor extends RedisDataCommandsFunctionExecutor implements
@@ -37,10 +38,16 @@ public class RedisHashCommandsFunctionExecutor extends RedisDataCommandsFunction
     return helper.getRedisHash(key);
   }
 
+  private RedisHash getRedisHash(ByteArrayWrapper key,
+      RedisStats.IncrementKeyspaceHitMissStats incType) {
+    return helper.getRedisHash(key, incType);
+  }
+
   @Override
   public int hset(ByteArrayWrapper key, List<ByteArrayWrapper> fieldsToSet, boolean NX) {
-    return stripedExecute(key, () -> getRedisHash(key)
-        .hset(getRegion(), key, fieldsToSet, NX));
+    return stripedExecute(key,
+        () -> getRedisHash(key, RedisStats.IncrementKeyspaceHitMissStats.INCREMENT_NOTHING)
+            .hset(getRegion(), key, fieldsToSet, NX));
   }
 
   @Override

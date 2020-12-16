@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.geode.cache.Region;
+import org.apache.geode.redis.internal.RedisStats;
 import org.apache.geode.redis.internal.executor.StripedExecutor;
 import org.apache.geode.redis.internal.executor.string.RedisStringCommands;
 import org.apache.geode.redis.internal.executor.string.RedisStringCommandsFunctionInvoker;
@@ -176,7 +177,9 @@ public class NullRedisString extends RedisString {
       }
     }
 
-    RedisString redisString = helper.setRedisString(key, value);
+    RedisString redisString =
+        helper
+            .setRedisString(key, value, RedisStats.IncrementKeyspaceHitMissStats.INCREMENT_NOTHING);
     redisString.handleSetExpiration(options);
     return true;
   }

@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import org.apache.geode.redis.internal.RedisStats;
 import org.apache.geode.redis.internal.executor.set.RedisSetCommands;
 
 public class RedisSetCommandsFunctionExecutor extends RedisDataCommandsFunctionExecutor implements
@@ -41,13 +42,22 @@ public class RedisSetCommandsFunctionExecutor extends RedisDataCommandsFunctionE
     return helper.getRedisSet(key);
   }
 
+  private RedisSet getRedisSet(ByteArrayWrapper key,
+      RedisStats.IncrementKeyspaceHitMissStats incType) {
+    return helper.getRedisSet(key, incType);
+  }
+
   @Override
   public long sadd(
       ByteArrayWrapper key,
       ArrayList<ByteArrayWrapper> membersToAdd) {
-    return stripedExecute(key, () -> getRedisSet(key).sadd(membersToAdd,
-        getRegion(), key));
+    return stripedExecute(key,
+        () -> getRedisSet(key, RedisStats.IncrementKeyspaceHitMissStats.INCREMENT_NOTHING)
+            .sadd(membersToAdd,
+                getRegion(), key));
   }
+
+
 
   @Override
   public int sunionstore(ByteArrayWrapper destination,
