@@ -264,7 +264,7 @@ public class NullRedisString extends RedisString {
       helper.getRegion().remove(key);
     } else {
       helper.setRedisString(key, newValue,
-          RedisStats.IncrementKeyspaceHitMissStats.INCREMENT_HITS);
+          RedisStats.IncrementKeyspaceHitMissStats.INCREMENT_NOTHING);
     }
     return newValue.length();
   }
