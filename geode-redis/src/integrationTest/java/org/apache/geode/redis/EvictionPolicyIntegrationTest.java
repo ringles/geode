@@ -18,23 +18,18 @@ package org.apache.geode.redis;
 import org.junit.ClassRule;
 import redis.clients.jedis.Jedis;
 
-import org.apache.geode.NativeRedisTestRule;
-
-public class EvictionPolicyNativeRedisAcceptanceTest
-    extends AbstractEvictionPolicyIntegrationTest {
+public class EvictionPolicyIntegrationTest extends AbstractEvictionPolicyIntegrationTest {
 
   @ClassRule
-  public static NativeRedisTestRule redis = new NativeRedisTestRule().withMaxMemory(200000000);
+  public static GeodeRedisServerRule server = new GeodeRedisServerRule();
 
   @Override
   public int getPort() {
-    return redis.getPort();
+    return server.getPort();
   }
 
   @Override
   public void configureMemoryAndEvictionPolicy(Jedis jedis) {
-    jedis.configSet("maxmemory", "2000000");
-    jedis.configSet("maxmemory-policy", "allkeys-lru");
-  }
 
+  }
 }
