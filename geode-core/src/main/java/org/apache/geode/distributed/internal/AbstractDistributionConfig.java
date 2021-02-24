@@ -112,6 +112,7 @@ import static org.apache.geode.distributed.ConfigurationProperties.MEMCACHED_PRO
 import static org.apache.geode.distributed.ConfigurationProperties.NAME;
 import static org.apache.geode.distributed.ConfigurationProperties.OFF_HEAP_MEMORY_SIZE;
 import static org.apache.geode.distributed.ConfigurationProperties.REDIS_BIND_ADDRESS;
+import static org.apache.geode.distributed.ConfigurationProperties.REDIS_CRITICAL_HEAP_PCT;
 import static org.apache.geode.distributed.ConfigurationProperties.REDIS_ENABLED;
 import static org.apache.geode.distributed.ConfigurationProperties.REDIS_PASSWORD;
 import static org.apache.geode.distributed.ConfigurationProperties.REDIS_PORT;
@@ -675,6 +676,29 @@ public abstract class AbstractDistributionConfig extends AbstractConfig
           String.format(
               "The redis-bind-address %s is not a valid address for this machine.  These are the valid addresses for this machine: %s",
               value, LocalHostUtil.getMyAddresses()));
+    }
+    return value;
+  }
+
+  @ConfigAttributeChecker(name = REDIS_CRITICAL_HEAP_PCT)
+  protected String checkRedisCriticalHeapPct(String value) {
+    if (value == null || value.length() == 0) {
+      return "90";
+    }
+    int intValue;
+    try {
+      intValue = Integer.parseInt(value);
+    } catch (NumberFormatException nfe) {
+      throw new IllegalArgumentException(
+          String.format(
+              "The redis-critical-heap-pct %s is not a valid value.",
+              value));
+    }
+    if (intValue < 0 || intValue > 100) {
+      throw new IllegalArgumentException(
+          String.format(
+              "The redis-critical-heap-pct %s is not a valid value.",
+              value));
     }
     return value;
   }

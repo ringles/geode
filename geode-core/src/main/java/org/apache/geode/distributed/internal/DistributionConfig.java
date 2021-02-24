@@ -112,6 +112,7 @@ import static org.apache.geode.distributed.ConfigurationProperties.MEMCACHED_PRO
 import static org.apache.geode.distributed.ConfigurationProperties.NAME;
 import static org.apache.geode.distributed.ConfigurationProperties.OFF_HEAP_MEMORY_SIZE;
 import static org.apache.geode.distributed.ConfigurationProperties.REDIS_BIND_ADDRESS;
+import static org.apache.geode.distributed.ConfigurationProperties.REDIS_CRITICAL_HEAP_PCT;
 import static org.apache.geode.distributed.ConfigurationProperties.REDIS_ENABLED;
 import static org.apache.geode.distributed.ConfigurationProperties.REDIS_PASSWORD;
 import static org.apache.geode.distributed.ConfigurationProperties.REDIS_PORT;
@@ -3495,6 +3496,26 @@ public interface DistributionConfig extends Config, LogConfig, StatisticsConfig 
   @ConfigAttribute(type = String.class)
   String REDIS_BIND_ADDRESS_NAME = REDIS_BIND_ADDRESS;
   String DEFAULT_REDIS_BIND_ADDRESS = "";
+
+  /**
+   * Returns the value of the {@link ConfigurationProperties#REDIS_BIND_ADDRESS} property
+   * <p>
+   * Returns the value of the
+   * {@link ConfigurationProperties#REDIS_BIND_ADDRESS} property
+   *
+   * @return the bind address for GeodeRedisServer
+   *
+   * @since GemFire 8.0
+   */
+  @ConfigAttributeGetter(name = REDIS_CRITICAL_HEAP_PCT)
+  String getRedisCriticalHeapPct();
+
+  @ConfigAttributeSetter(name = REDIS_CRITICAL_HEAP_PCT)
+  void setRedisCriticalHeapPct(String redisCriticalHeapPct);
+
+  @ConfigAttribute(type = String.class)
+  String REDIS_CRITICAL_HEAP_PCT_NAME = REDIS_CRITICAL_HEAP_PCT;
+  String DEFAULT_REDIS_CRITICAL_HEAP_PCT = "90";
 
   /**
    * Returns the value of the {@link ConfigurationProperties#REDIS_ENABLED} property

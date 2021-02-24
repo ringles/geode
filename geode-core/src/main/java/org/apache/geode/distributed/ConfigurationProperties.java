@@ -1425,6 +1425,17 @@ public interface ConfigurationProperties {
    */
   String NAME = "name";
   /**
+   * The static String definition of the <i>"redis-critical-heap-pct"</i> property <a
+   * name="redis-critical-heap-pct"/a>
+   * </p>
+   * <u>Description</u>: Defines the critical heap percentage for the Geode Redis server. If this
+   * property is set, the Redis API will return out-of-memory errors for write operations that
+   * would increase the memory usage beyond this percentage.
+   * </p>
+   * <u>Default</u>: "90.0"
+   */
+  String REDIS_CRITICAL_HEAP_PCT = "redis-critical-heap-pct";
+  /**
    * The static String definition of the <i>"redundancy-zone"</i> property <a
    * name="redundancy-zone"/a>
    * </p>

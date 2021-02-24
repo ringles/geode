@@ -494,6 +494,7 @@ public class DistributionConfigImpl extends AbstractDistributionConfig implement
    * Bind address for GeodeRedisServer
    */
   private String redisBindAddress = DEFAULT_REDIS_BIND_ADDRESS;
+  private String redisCriticalHeapPct = DEFAULT_REDIS_CRITICAL_HEAP_PCT;
 
   private Boolean redisEnabled = DEFAULT_REDIS_ENABLED;
 
@@ -794,6 +795,7 @@ public class DistributionConfigImpl extends AbstractDistributionConfig implement
     memcachedBindAddress = other.getMemcachedBindAddress();
     redisPort = other.getRedisPort();
     redisBindAddress = other.getRedisBindAddress();
+    redisCriticalHeapPct = other.getRedisCriticalHeapPct();
     redisPassword = other.getRedisPassword();
     redisEnabled = other.getRedisEnabled();
     userCommandPackages = other.getUserCommandPackages();
@@ -3519,8 +3521,18 @@ public class DistributionConfigImpl extends AbstractDistributionConfig implement
   }
 
   @Override
+  public String getRedisCriticalHeapPct() {
+    return redisCriticalHeapPct;
+  }
+
+  @Override
   public void setRedisBindAddress(String bindAddress) {
     redisBindAddress = bindAddress;
+  }
+
+  @Override
+  public void setRedisCriticalHeapPct(String pct) {
+    redisCriticalHeapPct = pct;
   }
 
   @Override
