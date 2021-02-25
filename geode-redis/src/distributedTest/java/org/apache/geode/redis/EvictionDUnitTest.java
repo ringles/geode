@@ -145,7 +145,7 @@ public class EvictionDUnitTest {
 
     int numGeneratedKeys = fillMemory(jedis1, MAX_ITERATION_COUNT, true);
 
-    deleteKeysToClearMemory(jedis1, numGeneratedKeys/2);
+    deleteKeysToClearMemory(jedis1, numGeneratedKeys / 2);
 
     forceGC();
 
@@ -178,7 +178,11 @@ public class EvictionDUnitTest {
   }
 
   private void forceGC() {
-    server1.getVM().invoke(() -> {Runtime.getRuntime().gc();});
-    server2.getVM().invoke(() -> {Runtime.getRuntime().gc();});
+    server1.getVM().invoke(() -> {
+      Runtime.getRuntime().gc();
+    });
+    server2.getVM().invoke(() -> {
+      Runtime.getRuntime().gc();
+    });
   }
 }
