@@ -77,11 +77,12 @@ public class RollingUpgradeDUnitTest {
   public ExecutorServiceRule executor = new ExecutorServiceRule();
 
   @BeforeClass
-  public static void classSetup() throws Exception {
+  public static void classSetup() {
     int[] redisPorts = AvailablePortHelper.getRandomAvailableTCPPorts(4);
     for (int i = 0; i < 4; i++) {
       redisPortStrings[i] = "" + redisPorts[i];
     }
+
     locatorProperties = new Properties();
     locatorProperties.setProperty(MAX_WAIT_TIME_RECONNECT, "15000");
 
@@ -95,9 +96,7 @@ public class RollingUpgradeDUnitTest {
   @Before
   public void before() {
     addIgnoredException(FunctionException.class);
-    // For now only tell the client about redisPort1.
-    // That server is never restarted so clients should
-    // never fail due to the server they are connected to failing.
+
     DUnitSocketAddressResolver dnsResolver1 =
         new DUnitSocketAddressResolver(new String[]{redisPortStrings[0]});
     DUnitSocketAddressResolver dnsResolver2 =
@@ -142,7 +141,7 @@ public class RollingUpgradeDUnitTest {
 
   @After
   public void after() {
-    for (int i = 1; i < 4; i+=2) {
+    for (int i = 0; i < 4; i++) {
       connections[i].close();
       redisClients[i].shutdown();
     }
@@ -183,55 +182,55 @@ public class RollingUpgradeDUnitTest {
       case HSET:
         task1 = () -> hsetPerformAndVerify(0, running1);
         task2 = () -> hsetPerformAndVerify(1, running2);
-        task3 = () -> hsetPerformAndVerify(3, running3);
-        task4 = () -> hsetPerformAndVerify(4, running4);
+        task3 = () -> hsetPerformAndVerify(2, running3);
+        task4 = () -> hsetPerformAndVerify(3, running4);
         break;
       case SADD:
         task1 = () -> saddPerformAndVerify(0, running1);
         task2 = () -> saddPerformAndVerify(1, running2);
-        task3 = () -> saddPerformAndVerify(3, running3);
-        task4 = () -> saddPerformAndVerify(4, running4);
+        task3 = () -> saddPerformAndVerify(2, running3);
+        task4 = () -> saddPerformAndVerify(3, running4);
         break;
       case SET:
         task1 = () -> setPerformAndVerify(0, running1);
         task2 = () -> setPerformAndVerify(1, running2);
-        task3 = () -> setPerformAndVerify(3, running3);
-        task4 = () -> setPerformAndVerify(4, running4);
+        task3 = () -> setPerformAndVerify(2, running3);
+        task4 = () -> setPerformAndVerify(3, running4);
         break;
     }
 
-//    server1.stop();
-//    server1 = cluster.startRedisVM(1, redisPortStrings[0], locator.getPort());
-//    rebalanceAllRegions(server1);
+    server1.stop();
+    server1 = cluster.startRedisVM(1, redisPortStrings[0], locator.getPort());
+    rebalanceAllRegions(server1);
 //    Thread.sleep(2000);
-//    Future<Void> future1 = executor.runAsync(task1);
+    Future<Void> future1 = executor.runAsync(task1);
 
     server2.stop();
     server2 = cluster.startRedisVM(2, redisPortStrings[1], locator.getPort());
     rebalanceAllRegions(server2);
-    Thread.sleep(2000);
+//    Thread.sleep(2000);
     Future<Void> future2 = executor.runAsync(task2);
 
-//    server3.stop();
-//    server3 = cluster.startRedisVM(3, redisPortStrings[2], locator.getPort());
-//    rebalanceAllRegions(server3);
+    server3.stop();
+    server3 = cluster.startRedisVM(3, redisPortStrings[2], locator.getPort());
+    rebalanceAllRegions(server3);
 //    Thread.sleep(2000);
-//    Future<Void> future3 = executor.runAsync(task3);
+    Future<Void> future3 = executor.runAsync(task3);
 
     server4.stop();
     server4 = cluster.startRedisVM(4, redisPortStrings[3], locator.getPort());
     rebalanceAllRegions(server4);
-    Thread.sleep(2000);
     Future<Void> future4 = executor.runAsync(task4);
+    Thread.sleep(2000);
 
     running1.set(false);
     running2.set(false);
     running3.set(false);
     running4.set(false);
 
-//    future1.get();
+    future1.get();
     future2.get();
-//    future3.get();
+    future3.get();
     future4.get();
   }
 
@@ -263,7 +262,7 @@ public class RollingUpgradeDUnitTest {
       assertThat(commands.hget(key, field)).isEqualTo(value);
     }
 
-    logger.info("--->>> HSET test ran {} iterations", iterationCount);
+    logger.info("--->>> HSET test index {} ran {} iterations", index, iterationCount);
   }
 
   private void saddPerformAndVerify(int index, AtomicBoolean isRunning) {
@@ -297,7 +296,7 @@ public class RollingUpgradeDUnitTest {
     }
     assertThat(missingMembers).isEmpty();
 
-    logger.info("--->>> SADD test ran {} iterations, retrying {} times", iterationCount);
+    logger.info("--->>> SADD test index {}  ran {} iterations", index, iterationCount);
   }
 
   private void setPerformAndVerify(int index, AtomicBoolean isRunning) {
@@ -327,7 +326,7 @@ public class RollingUpgradeDUnitTest {
       assertThat(value).isEqualTo(key);
     }
 
-    logger.info("--->>> SET test ran {} iterations", iterationCount);
+    logger.info("--->>> SET test index {} ran {} iterations", index, iterationCount);
   }
 
   private static void rebalanceAllRegions(MemberVM vm) {
