@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -48,6 +49,7 @@ import org.apache.geode.redis.internal.delta.RemsDeltaInfo;
 public class RedisSet extends AbstractRedisData {
 
   private HashSet<ByteArrayWrapper> members;
+  private AtomicInteger setSize = new AtomicInteger();
 
   @SuppressWarnings("unchecked")
   RedisSet(Collection<ByteArrayWrapper> members) {
@@ -214,19 +216,25 @@ public class RedisSet extends AbstractRedisData {
   }
 
   private synchronized boolean membersAdd(ByteArrayWrapper memberToAdd) {
+    setSize.addAndGet(PER_OBJECT_OVERHEAD + memberToAdd.length());
     return members.add(memberToAdd);
   }
 
   private boolean membersRemove(ByteArrayWrapper memberToRemove) {
+    setSize.addAndGet(-(PER_OBJECT_OVERHEAD + memberToRemove.length()));
     return members.remove(memberToRemove);
   }
 
   private synchronized boolean membersAddAll(AddsDeltaInfo addsDeltaInfo) {
-    return members.addAll(addsDeltaInfo.getAdds());
+    ArrayList<ByteArrayWrapper> adds = addsDeltaInfo.getAdds();
+    setSize.addAndGet(adds.stream().mapToInt(a -> a.length() + PER_OBJECT_OVERHEAD).sum());
+    return members.addAll(adds);
   }
 
   private synchronized boolean membersRemoveAll(RemsDeltaInfo remsDeltaInfo) {
-    return members.removeAll(remsDeltaInfo.getRemoves());
+    ArrayList<ByteArrayWrapper> removes = remsDeltaInfo.getRemoves();
+    setSize.addAndGet(-removes.stream().mapToInt(a -> a.length() + PER_OBJECT_OVERHEAD).sum());
+    return members.removeAll(removes);
   }
 
 
@@ -316,5 +324,10 @@ public class RedisSet extends AbstractRedisData {
   @Override
   public KnownVersion[] getSerializationVersions() {
     return null;
+  }
+
+  @Override
+  public int getSizeInBytes() {
+    return setSize.get();
   }
 }

@@ -729,4 +729,9 @@ public class RedisString extends AbstractRedisData {
   public KnownVersion[] getSerializationVersions() {
     return null;
   }
+
+  @Override
+  public int getSizeInBytes() {
+    return PER_OBJECT_OVERHEAD + value.length();
+  }
 }

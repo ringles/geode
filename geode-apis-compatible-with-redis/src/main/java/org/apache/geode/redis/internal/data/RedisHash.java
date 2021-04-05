@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -58,6 +59,7 @@ public class RedisHash extends AbstractRedisData {
   private ConcurrentHashMap<UUID, List<ByteArrayWrapper>> hScanSnapShots;
   private ConcurrentHashMap<UUID, Long> hScanSnapShotCreationTimes;
   private ScheduledExecutorService HSCANSnapshotExpirationExecutor = null;
+  private AtomicInteger hashSize = new AtomicInteger();
 
   private static int defaultHscanSnapshotsExpireCheckFrequency =
       Integer.getInteger("redis.hscan-snapshot-cleanup-interval", 30000);
@@ -161,15 +163,19 @@ public class RedisHash extends AbstractRedisData {
 
 
   private synchronized ByteArrayWrapper hashPut(ByteArrayWrapper field, ByteArrayWrapper value) {
+    hashSize.addAndGet(PER_OBJECT_OVERHEAD + field.length() + value.length());
     return hash.put(field, value);
   }
 
   private synchronized ByteArrayWrapper hashPutIfAbsent(ByteArrayWrapper field,
       ByteArrayWrapper value) {
-    return hash.putIfAbsent(field, value);
+
+    ByteArrayWrapper returnValue = hash.putIfAbsent(field, value);
+    return returnValue;
   }
 
   private synchronized ByteArrayWrapper hashRemove(ByteArrayWrapper field) {
+    hashSize.addAndGet(-(PER_OBJECT_OVERHEAD + field.length() + hash.get(field).length()));
     return hash.remove(field);
   }
 
@@ -509,5 +515,10 @@ public class RedisHash extends AbstractRedisData {
   @Override
   public KnownVersion[] getSerializationVersions() {
     return null;
+  }
+
+  @Override
+  public int getSizeInBytes() {
+    return 0;
   }
 }
