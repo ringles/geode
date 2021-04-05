@@ -170,8 +170,7 @@ public class RedisHash extends AbstractRedisData {
   private synchronized ByteArrayWrapper hashPutIfAbsent(ByteArrayWrapper field,
       ByteArrayWrapper value) {
 
-    ByteArrayWrapper returnValue = hash.putIfAbsent(field, value);
-    return returnValue;
+    return hash.putIfAbsent(field, value);
   }
 
   private synchronized ByteArrayWrapper hashRemove(ByteArrayWrapper field) {
